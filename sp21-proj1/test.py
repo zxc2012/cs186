@@ -131,4 +131,3 @@ if __name__ == '__main__':
         print("SUCCESS: Your queries passed tests on this dataset")
         exit(0)
     exit(1)
-    
