@@ -57,39 +57,61 @@ AS
 -- Question 2i
 CREATE VIEW q2i(namefirst, namelast, playerid, yearid)
 AS
-  SELECT namefirst,namelast,playerid from people
-  where playerid=={select playid from halloffame}
-  order by playerid,schoolid
+  SELECT namefirst,namelast,people.playerid,yearid
+  from people,halloffame
+  where people.playerid=halloffame.playerid and halloffame.inducted='Y'
+  order by yearid desc,people.playerid
 ;
 
 -- Question 2ii
 CREATE VIEW q2ii(namefirst, namelast, playerid, schoolid, yearid)
 AS
-  SELECT 1, 1, 1, 1, 1 -- replace this line
+  SELECT namefirst, namelast, people.playerid, schools.schoolID,yearid
+  from (collegeplaying natural join schools natural join people), halloffame
+  where collegeplaying.playerid=halloffame.playerid and halloffame.inducted='Y' and schoolState='CA'
+  order by yearid desc,schools.schoolID,people.playerid
 ;
 
 -- Question 2iii
 CREATE VIEW q2iii(playerid, namefirst, namelast, schoolid)
 AS
-  SELECT 1, 1, 1, 1 -- replace this line
+  SELECT halloffame.playerid,namefirst, namelast,schoolID
+  from (halloffame natural join people)left outer join collegeplaying on halloffame.playerid=collegeplaying.playerid
+  where halloffame.inducted='Y'
+  order by halloffame.playerid desc,schoolID
 ;
 
 -- Question 3i
 CREATE VIEW q3i(playerid, namefirst, namelast, yearid, slg)
 AS
-  SELECT 1, 1, 1, 1, 1 -- replace this line
+  SELECT batting.playerid, namefirst, namelast, yearid, (H+H2B+2*H3B+3*HR)*1.0/AB as slg
+  from batting natural join people 
+  where AB>50
+  order by slg desc,yearid,batting.playerid
+  limit 10
 ;
 
 -- Question 3ii
 CREATE VIEW q3ii(playerid, namefirst, namelast, lslg)
 AS
-  SELECT 1, 1, 1, 1 -- replace this line
+  SELECT batting.playerid, namefirst, namelast, sum(H+H2B+2*H3B+3*HR)*1.0/sum(AB) as lslg
+  from batting natural join people 
+  group by batting.playerid
+  having sum(AB)>50
+  order by lslg desc,batting.playerid
+  limit 10
 ;
 
 -- Question 3iii
 CREATE VIEW q3iii(namefirst, namelast, lslg)
 AS
-  SELECT 1, 1, 1 -- replace this line
+  SELECT namefirst, namelast, sum(H+H2B+2*H3B+3*HR)*1.0/sum(AB) as lslg
+  from batting natural join people 
+  group by batting.playerid
+  having sum(AB)>50 and lslg>(
+    select sum(H+H2B+2*H3B+3*HR)*1.0/sum(AB) from batting natural join people 
+    where batting.playerid='mayswi01'
+  )
 ;
 
 -- Question 4i

@@ -22,7 +22,7 @@ target/*
 /bin/
 
 # ignore submission files
-hw*.zip
+*/hw*.zip
 
 # ignore unzipped dataset
-lahman.db
+*/lahman.db
