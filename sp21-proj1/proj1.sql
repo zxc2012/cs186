@@ -117,7 +117,10 @@ AS
 -- Question 4i
 CREATE VIEW q4i(yearid, min, max, avg)
 AS
-  SELECT 1, 1, 1, 1 -- replace this line
+  SELECT yearID, min(salary), max(salary),avg(salary)
+  from salaries
+  group by yearID
+  order by yearID
 ;
 
 
@@ -129,22 +132,40 @@ INSERT INTO binids VALUES (0), (1), (2), (3), (4), (5), (6), (7), (8), (9);
 -- Question 4ii
 CREATE VIEW q4ii(binid, low, high, count)
 AS
-  SELECT 1, 1, 1, 1 -- replace this line
+  SELECT binid, 507500.0+binid*3249250,3756750.0+binid*3249250, count(*)
+  from binids,salaries
+  where (salary between 507500.0+binid*3249250 and 3756750.0+binid*3249250 )and yearID='2016'
+  group by binid
 ;
 
 -- Question 4iii
 CREATE VIEW q4iii(yearid, mindiff, maxdiff, avgdiff)
 AS
-  SELECT 1, 1, 1, 1 -- replace this line
+  SELECT t.yearid,t.min-r.min,t.max-r.max,t.avg-r.avg
+  from q4i as t join q4i as r
+  on t.yearid=r.yearid+1
 ;
 
 -- Question 4iv
 CREATE VIEW q4iv(playerid, namefirst, namelast, salary, yearid)
 AS
-  SELECT 1, 1, 1, 1, 1 -- replace this line
+  SELECT t.playerID, namefirst, namelast, salary ,t.yearID
+  from (salaries natural join people)as t join (
+      select max(salary) as m,yearID from salaries
+      group by yearID
+      having yearID between '2000' and '2001' 
+  )r
+  on t.yearID=r.yearID and t.salary=r.m
 ;
 -- Question 4v
 CREATE VIEW q4v(team, diffAvg) AS
-  SELECT 1, 1 -- replace this line
+  SELECT t.teamID,max(salary)-min(salary)
+  from allstarfull as t join(
+      select salary,teamID,yearID,playerID
+      from salaries
+      where yearID='2016'
+  )r 
+  on t.teamID=r.teamID and t.yearID=r.yearID and t.playerID=r.playerID
+  group by t.teamID
 ;
 
