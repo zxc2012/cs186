@@ -6,6 +6,11 @@
 target/*
 *.class
 
+# Eclipse
+.classpath
+.project
+.settings/
+
 # Ignore all IntelliJ IDEA files
 .idea/*
 *.iml
@@ -17,7 +22,6 @@ target/*
 /bin/
 
 # ignore submission files
-*/hw*.zip
-
-# ignore unzipped dataset
-*/lahman.db
+hw*.zip
+*.zip
+demo/*
