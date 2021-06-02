@@ -318,7 +318,7 @@ public class TestLeafNode {
         long pageNum = leaf.getPage().getPageNum();
 
         assertEquals(leaf, LeafNode.fromBytes(metadata, bufferManager, treeContext, pageNum));
-
+        
         for (int i = 0; i < 10; i++) {
             keys.add(new IntDataBox(i));
             rids.add(new RecordId(i, (short) i));
