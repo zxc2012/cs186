@@ -147,7 +147,7 @@ class LeafNode extends BPlusNode {
     @Override
     public LeafNode get(DataBox key) {
         // TODO(proj2): implement
-
+        for(DataBox )
         return null;
     }
 
@@ -162,8 +162,18 @@ class LeafNode extends BPlusNode {
     // See BPlusNode.put.
     @Override
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
-        // TODO(proj2): implement
-
+        assert (keys.size() == rids.size());
+        if (keys.size() <= 2 * metadata.getOrder()){
+            int l=0;
+            int r=keys.size()-1;
+            while(l<r){
+                int mid=l+(r-l)>>1;
+                if(keys.get(mid)==key)
+            }
+            keys.add(key);
+            rids.add(rid);
+        }
+        sync();
         return Optional.empty();
     }
 
@@ -385,7 +395,7 @@ class LeafNode extends BPlusNode {
         List<RecordId> rids =new ArrayList<>();
         Long temp=buf.getLong();
         int n=buf.getInt();
-        Optional<Long> rightSibling=temp==-1L?null:Optional.of(temp);
+        Optional<Long> rightSibling=temp==-1L?Optional.empty():Optional.of(temp);
         for(int i=0;i<n;++i){
             keys.add(DataBox.fromBytes(buf, metadata.getKeySchema()));
             rids.add(RecordId.fromBytes(buf));

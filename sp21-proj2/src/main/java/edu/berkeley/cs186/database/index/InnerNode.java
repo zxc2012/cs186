@@ -80,26 +80,37 @@ class InnerNode extends BPlusNode {
     // See BPlusNode.get.
     @Override
     public LeafNode get(DataBox key) {
-        // TODO(proj2): implement
-
-        return null;
+        assert (keys.size() + 1 == children.size());
+        int n=keys.size();
+        for(int i=0;i<n;++i){
+            if (key.getInt()<keys.get(i).getInt()){
+                return LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(i)); 
+            }
+        }
+        return LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(n));
     }
 
     // See BPlusNode.getLeftmostLeaf.
     @Override
     public LeafNode getLeftmostLeaf() {
         assert(children.size() > 0);
-        // TODO(proj2): implement
-
-        return null;
+        return LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(0));
     }
 
     // See BPlusNode.put.
     @Override
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
-        // TODO(proj2): implement
-
-        return Optional.empty();
+        assert (keys.size() + 1 == children.size());
+        int n=keys.size();
+        LeafNode ans;
+        for(int i=0;i<n;++i){
+            if (key.getInt()<keys.get(i).getInt()){
+                ans=LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(i));
+                return ans.put(key,rid); 
+            }
+        }
+        ans=LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(n));
+        return ans.put(key,rid);
     }
 
     // See BPlusNode.bulkLoad.
