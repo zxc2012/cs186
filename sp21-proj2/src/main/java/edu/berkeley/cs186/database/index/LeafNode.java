@@ -164,14 +164,27 @@ class LeafNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
         assert (keys.size() == rids.size());
         if (keys.size() <= 2 * metadata.getOrder()){
-            int l=0;
-            int r=keys.size()-1;
-            while(l<r){
-                int mid=l+(r-l)>>1;
-                if(keys.get(mid)==key)
-            }
+            int l=0,n=keys.size();
+            int r=n;
             keys.add(key);
             rids.add(rid);
+            while(l<r){
+                int mid=l+(r-l)>>1;
+                if(keys.get(mid).getInt()>key.getInt())r=mid;
+                else l=mid+1;
+
+            }
+            System.out.println("find insert :"+l);
+            if(r==n){
+                keys.add(key);
+                rids.add(rid);
+            }
+            else{
+                System.out.println("123");
+                keys.add(l,key);
+                rids.add(l,rid);
+            }
+
         }
         sync();
         return Optional.empty();
