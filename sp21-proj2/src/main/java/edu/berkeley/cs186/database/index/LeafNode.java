@@ -146,9 +146,19 @@ class LeafNode extends BPlusNode {
     // See BPlusNode.get.
     @Override
     public LeafNode get(DataBox key) {
-        // TODO(proj2): implement
-        for(DataBox )
-        return null;
+        int l=0,n=keys.size();
+        int r=n-1;
+        while(l<r){
+            int mid=l+((r-l)>>1);
+            if(keys.get(mid).getInt()==key.getInt()){
+                return LeafNode.fromBytes(metadata, bufferManager, treeContext, page.getPageNum()); 
+            }
+            else if(keys.get(mid).getInt()>key.getInt())r=mid-1;
+            else l=mid+1;
+        }
+        if(n>0&&keys.get(l).getInt()==key.getInt())
+            return LeafNode.fromBytes(metadata, bufferManager, treeContext, page.getPageNum()); 
+        else return new LeafNode(metadata, bufferManager,page, keys, rids, Optional.empty(), treeContext);
     }
 
     // See BPlusNode.getLeftmostLeaf.
@@ -166,21 +176,16 @@ class LeafNode extends BPlusNode {
         if (keys.size() <= 2 * metadata.getOrder()){
             int l=0,n=keys.size();
             int r=n;
-            keys.add(key);
-            rids.add(rid);
             while(l<r){
-                int mid=l+(r-l)>>1;
+                int mid=l+((r-l)>>1);
                 if(keys.get(mid).getInt()>key.getInt())r=mid;
                 else l=mid+1;
-
             }
-            System.out.println("find insert :"+l);
             if(r==n){
                 keys.add(key);
                 rids.add(rid);
             }
             else{
-                System.out.println("123");
                 keys.add(l,key);
                 rids.add(l,rid);
             }
@@ -202,8 +207,23 @@ class LeafNode extends BPlusNode {
     // See BPlusNode.remove.
     @Override
     public void remove(DataBox key) {
-        // TODO(proj2): implement
-
+        assert (keys.size() == rids.size());
+        int l=0,n=keys.size();
+        int r=n-1;
+        while(l<r){
+            int mid=l+((r-l)>>1);
+            if(keys.get(mid).getInt()==key.getInt()){
+                keys.remove(mid);
+                rids.remove(mid);
+            }
+            else if(keys.get(mid).getInt()>key.getInt())r=mid-1;
+            else l=mid+1;
+        }
+        if(keys.get(l).getInt()==key.getInt()){
+            keys.remove(l);
+            rids.remove(l);
+        }
+        sync();
         return;
     }
 

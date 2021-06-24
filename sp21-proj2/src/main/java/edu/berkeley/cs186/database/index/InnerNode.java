@@ -125,7 +125,18 @@ class InnerNode extends BPlusNode {
     // See BPlusNode.remove.
     @Override
     public void remove(DataBox key) {
-        // TODO(proj2): implement
+        assert (keys.size() + 1 == children.size());
+        int n=keys.size();
+        LeafNode ans;
+        for(int i=0;i<n;++i){
+            if (key.getInt()<keys.get(i).getInt()){
+                ans=LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(i));
+                ans.remove(key);
+                return;
+            }
+        }
+        ans=LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(n));
+        ans.remove(key);
 
         return;
     }
