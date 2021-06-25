@@ -102,15 +102,61 @@ class InnerNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
         assert (keys.size() + 1 == children.size());
         int n=keys.size();
-        LeafNode ans;
+        BPlusNode ans;
         for(int i=0;i<n;++i){
             if (key.getInt()<keys.get(i).getInt()){
-                ans=LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(i));
-                return ans.put(key,rid); 
+                ans=BPlusNode.fromBytes(metadata, bufferManager, treeContext, children.get(i));
+                Optional<Pair<DataBox,Long>>leafresult= ans.put(key,rid);
+                if(leafresult.equals(Optional.empty()))return  Optional.empty();
+                else{
+                    keys.add(i,leafresult.get().getFirst());
+                    children.add(i+1,leafresult.get().getSecond());
+                    if(keys.size() <= 2 * metadata.getOrder()){
+                        sync();
+                        return Optional.empty();
+                    }
+                    else{
+                        List<DataBox> new_keys=new ArrayList<>();
+                        List<Long> new_children=new ArrayList<>();
+                        DataBox split_key=keys.get(metadata.getOrder());
+                        for(int j=metadata.getOrder();j<=keys.size();++j){
+                            if(j>metadata.getOrder())new_keys.add(keys.get(j));
+                            new_children.add(children.get(j+1));
+                            keys.remove(j);
+                            children.remove(j+1);
+                        }
+                        sync();
+                        InnerNode new_innernode=new InnerNode(metadata, bufferManager, new_keys, new_children, treeContext);
+                        return Optional.of(new Pair(split_key,new_innernode.page));
+                    }
+                }
             }
         }
-        ans=LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(n));
-        return ans.put(key,rid);
+        ans=BPlusNode.fromBytes(metadata, bufferManager, treeContext, children.get(n));
+        Optional<Pair<DataBox,Long>>leafresult= ans.put(key,rid);
+        if(leafresult.equals(Optional.empty()))return  Optional.empty();
+        else{
+            keys.add(n,leafresult.get().getFirst());
+            children.add(n+1,leafresult.get().getSecond());
+            if(keys.size() <= 2 * metadata.getOrder()){
+                sync();
+                return Optional.empty();
+            }
+            else{
+                List<DataBox> new_keys=new ArrayList<>();
+                List<Long> new_children=new ArrayList<>();
+                DataBox split_key=keys.get(metadata.getOrder());
+                for(int j=metadata.getOrder();j<=keys.size();++j){
+                    if(j>metadata.getOrder())new_keys.add(keys.get(j));
+                    new_children.add(children.get(j+1));
+                    keys.remove(j);
+                    children.remove(j+1);
+                }
+                sync();
+                InnerNode new_innernode=new InnerNode(metadata, bufferManager, new_keys, new_children, treeContext);
+                return Optional.of(new Pair(split_key,new_innernode.page));
+            }
+        }
     }
 
     // See BPlusNode.bulkLoad.

@@ -147,6 +147,7 @@ class LeafNode extends BPlusNode {
     @Override
     public LeafNode get(DataBox key) {
         int l=0,n=keys.size();
+        page = bufferManager.fetchPage(treeContext, page.getPageNum());
         int r=n-1;
         while(l<r){
             int mid=l+((r-l)>>1);
@@ -158,15 +159,15 @@ class LeafNode extends BPlusNode {
         }
         if(n>0&&keys.get(l).getInt()==key.getInt())
             return LeafNode.fromBytes(metadata, bufferManager, treeContext, page.getPageNum()); 
-        else return new LeafNode(metadata, bufferManager,page, keys, rids, Optional.empty(), treeContext);
+        else return new LeafNode(metadata, bufferManager,page, keys, rids, rightSibling, treeContext);
     }
 
     // See BPlusNode.getLeftmostLeaf.
     @Override
     public LeafNode getLeftmostLeaf() {
-        // TODO(proj2): implement
+        page = bufferManager.fetchPage(treeContext, page.getPageNum());
 
-        return null;
+        return new LeafNode(metadata, bufferManager,page, keys, rids, rightSibling, treeContext);
     }
 
     // See BPlusNode.put.
@@ -181,18 +182,31 @@ class LeafNode extends BPlusNode {
                 if(keys.get(mid).getInt()>key.getInt())r=mid;
                 else l=mid+1;
             }
-            if(r==n){
-                keys.add(key);
-                rids.add(rid);
-            }
-            else{
+            if(l>0&&keys.get(l-1).getInt()==key.getInt())
+                throw new BPlusTreeException("Duplicate put");
+            else
+            {
                 keys.add(l,key);
                 rids.add(l,rid);
             }
-
+            sync();
+            return Optional.empty();
         }
-        sync();
-        return Optional.empty();
+        else{
+            List<DataBox> new_keys= new ArrayList<>();
+            List<RecordId> new_rids =new ArrayList<>();
+            DataBox split_key=keys.get(metadata.getOrder());
+            for(int i=metadata.getOrder();i<=keys.size();++i){
+                new_keys.add(keys.get(i));
+                new_rids.add(rids.get(i));
+                keys.remove(i);
+                rids.remove(i);
+            }
+            LeafNode new_leafnode=new LeafNode(metadata, bufferManager, new_keys, new_rids, rightSibling, treeContext);
+            rightSibling= Optional.of(new_leafnode.getPage().getPageNum());
+            sync();
+            return Optional.of(new Pair(split_key,new_leafnode.getPage().getPageNum()));
+        }
     }
 
     // See BPlusNode.bulkLoad.
