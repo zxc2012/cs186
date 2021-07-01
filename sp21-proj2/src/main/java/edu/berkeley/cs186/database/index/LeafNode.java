@@ -146,20 +146,23 @@ class LeafNode extends BPlusNode {
     // See BPlusNode.get.
     @Override
     public LeafNode get(DataBox key) {
-        int l=0,n=keys.size();
+
         page = bufferManager.fetchPage(treeContext, page.getPageNum());
-        int r=n-1;
-        while(l<r){
-            int mid=l+((r-l)>>1);
-            if(keys.get(mid).getInt()==key.getInt()){
-                return LeafNode.fromBytes(metadata, bufferManager, treeContext, page.getPageNum()); 
-            }
-            else if(keys.get(mid).getInt()>key.getInt())r=mid-1;
-            else l=mid+1;
-        }
-        if(n>0&&keys.get(l).getInt()==key.getInt())
-            return LeafNode.fromBytes(metadata, bufferManager, treeContext, page.getPageNum()); 
-        else return new LeafNode(metadata, bufferManager,page, keys, rids, rightSibling, treeContext);
+
+        // int l=0,n=keys.size();
+        // int r=n-1;
+        // while(l<r){
+        //     int mid=l+((r-l)>>1);
+        //     if(keys.get(mid).getInt()==key.getInt()){
+        //         return LeafNode.fromBytes(metadata, bufferManager, treeContext, page.getPageNum()); 
+        //     }
+        //     else if(keys.get(mid).getInt()>key.getInt())r=mid-1;
+        //     else l=mid+1;
+        // }
+        // if(n>0&&keys.get(l).getInt()==key.getInt())
+        //     return LeafNode.fromBytes(metadata, bufferManager, treeContext, page.getPageNum()); 
+        // else 
+        return new LeafNode(metadata, bufferManager,page, keys, rids, rightSibling, treeContext);
     }
 
     // See BPlusNode.getLeftmostLeaf.
@@ -174,33 +177,34 @@ class LeafNode extends BPlusNode {
     @Override
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
         assert (keys.size() == rids.size());
-        if (keys.size() <= 2 * metadata.getOrder()){
-            int l=0,n=keys.size();
-            int r=n;
-            while(l<r){
-                int mid=l+((r-l)>>1);
-                if(keys.get(mid).getInt()>key.getInt())r=mid;
-                else l=mid+1;
-            }
-            if(l>0&&keys.get(l-1).getInt()==key.getInt())
-                throw new BPlusTreeException("Duplicate put");
-            else
-            {
-                keys.add(l,key);
-                rids.add(l,rid);
-            }
+        int l=0,n=keys.size();
+        int r=n;
+        while(l<r){
+            int mid=l+((r-l)>>1);
+            if(keys.get(mid).getInt()>key.getInt())r=mid;
+            else l=mid+1;
+        }
+        if(l>0&&keys.get(l-1).getInt()==key.getInt())
+            throw new BPlusTreeException("Duplicate put");
+        else
+        {
+            keys.add(l,key);
+            rids.add(l,rid);
+        }
+        if (keys.size()<= 2 * metadata.getOrder()){
             sync();
             return Optional.empty();
         }
         else{
+            int num=keys.size();
             List<DataBox> new_keys= new ArrayList<>();
             List<RecordId> new_rids =new ArrayList<>();
             DataBox split_key=keys.get(metadata.getOrder());
-            for(int i=metadata.getOrder();i<=keys.size();++i){
-                new_keys.add(keys.get(i));
-                new_rids.add(rids.get(i));
-                keys.remove(i);
-                rids.remove(i);
+            for(int i=metadata.getOrder();i<num;++i){
+                new_keys.add(keys.get(metadata.getOrder()));
+                new_rids.add(rids.get(metadata.getOrder()));
+                keys.remove(metadata.getOrder());
+                rids.remove(metadata.getOrder());
             }
             LeafNode new_leafnode=new LeafNode(metadata, bufferManager, new_keys, new_rids, rightSibling, treeContext);
             rightSibling= Optional.of(new_leafnode.getPage().getPageNum());

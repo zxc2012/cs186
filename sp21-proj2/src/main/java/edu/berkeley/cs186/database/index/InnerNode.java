@@ -81,20 +81,57 @@ class InnerNode extends BPlusNode {
     @Override
     public LeafNode get(DataBox key) {
         assert (keys.size() + 1 == children.size());
-        int n=keys.size();
-        for(int i=0;i<n;++i){
-            if (key.getInt()<keys.get(i).getInt()){
-                return LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(i)); 
+        BPlusNode ans=null;
+        int flag=0,step=0;
+        InnerNode qns=this;
+        while(flag==0){
+            int n=qns.keys.size();
+            for(int i=0;i<n;++i){
+                if (key.getInt()<qns.keys.get(i).getInt()){
+                    ans=BPlusNode.fromBytes(qns.metadata, qns.bufferManager, qns.treeContext, qns.children.get(i));
+                    if(ans instanceof LeafNode){
+                        flag++;
+                        return LeafNode.fromBytes(qns.metadata, qns.bufferManager, qns.treeContext, qns.children.get(i));
+                    }
+                    else {
+                        step++;
+                        break;
+                    }
+                }
             }
+            if(step==0)
+                ans=BPlusNode.fromBytes(qns.metadata, qns.bufferManager, qns.treeContext, qns.children.get(n));
+            if(ans instanceof LeafNode){
+                flag++;
+                return LeafNode.fromBytes(qns.metadata, qns.bufferManager, qns.treeContext, qns.children.get(n));
+            }
+            else {
+                qns=(InnerNode)ans;
+            }
+            step=0;
         }
-        return LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(n));
+        return (LeafNode)ans;
+
     }
 
     // See BPlusNode.getLeftmostLeaf.
     @Override
     public LeafNode getLeftmostLeaf() {
         assert(children.size() > 0);
-        return LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(0));
+        BPlusNode ans=null;
+        int flag=0;
+        InnerNode qns=this;
+        while(flag==0){
+            ans=BPlusNode.fromBytes(qns.metadata, qns.bufferManager, qns.treeContext, qns.children.get(0));
+            if(ans instanceof LeafNode){
+                flag++;
+                return ans.getLeftmostLeaf();
+            }
+            else {
+                qns=(InnerNode)ans;
+            }
+        }
+        return (LeafNode)ans;
     }
 
     // See BPlusNode.put.
@@ -116,18 +153,19 @@ class InnerNode extends BPlusNode {
                         return Optional.empty();
                     }
                     else{
+                        int num=keys.size();
                         List<DataBox> new_keys=new ArrayList<>();
                         List<Long> new_children=new ArrayList<>();
                         DataBox split_key=keys.get(metadata.getOrder());
-                        for(int j=metadata.getOrder();j<=keys.size();++j){
-                            if(j>metadata.getOrder())new_keys.add(keys.get(j));
-                            new_children.add(children.get(j+1));
-                            keys.remove(j);
-                            children.remove(j+1);
+                        for(int j=metadata.getOrder();j<num;++j){
+                            if(j>metadata.getOrder())new_keys.add(keys.get(metadata.getOrder()));
+                            new_children.add(children.get(metadata.getOrder()+1));
+                            keys.remove(metadata.getOrder());
+                            children.remove(metadata.getOrder()+1);
                         }
                         sync();
                         InnerNode new_innernode=new InnerNode(metadata, bufferManager, new_keys, new_children, treeContext);
-                        return Optional.of(new Pair(split_key,new_innernode.page));
+                        return Optional.of(new Pair(split_key,new_innernode.page.getPageNum()));
                     }
                 }
             }
@@ -143,18 +181,19 @@ class InnerNode extends BPlusNode {
                 return Optional.empty();
             }
             else{
+                int num=keys.size();
                 List<DataBox> new_keys=new ArrayList<>();
                 List<Long> new_children=new ArrayList<>();
                 DataBox split_key=keys.get(metadata.getOrder());
-                for(int j=metadata.getOrder();j<=keys.size();++j){
-                    if(j>metadata.getOrder())new_keys.add(keys.get(j));
-                    new_children.add(children.get(j+1));
-                    keys.remove(j);
-                    children.remove(j+1);
+                for(int j=metadata.getOrder();j<num;++j){
+                    if(j>metadata.getOrder())new_keys.add(keys.get(metadata.getOrder()));
+                    new_children.add(children.get(metadata.getOrder()+1));
+                    keys.remove(metadata.getOrder());
+                    children.remove(metadata.getOrder()+1);
                 }
                 sync();
                 InnerNode new_innernode=new InnerNode(metadata, bufferManager, new_keys, new_children, treeContext);
-                return Optional.of(new Pair(split_key,new_innernode.page));
+                return Optional.of(new Pair(split_key,new_innernode.page.getPageNum()));
             }
         }
     }
@@ -173,15 +212,15 @@ class InnerNode extends BPlusNode {
     public void remove(DataBox key) {
         assert (keys.size() + 1 == children.size());
         int n=keys.size();
-        LeafNode ans;
+        BPlusNode ans;
         for(int i=0;i<n;++i){
             if (key.getInt()<keys.get(i).getInt()){
-                ans=LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(i));
+                ans=BPlusNode.fromBytes(metadata, bufferManager, treeContext, children.get(i));
                 ans.remove(key);
                 return;
             }
         }
-        ans=LeafNode.fromBytes(metadata, bufferManager, treeContext, children.get(n));
+        ans=BPlusNode.fromBytes(metadata, bufferManager, treeContext, children.get(n));
         ans.remove(key);
 
         return;
